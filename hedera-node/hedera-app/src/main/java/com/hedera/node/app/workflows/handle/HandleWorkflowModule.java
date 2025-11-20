@@ -191,6 +191,7 @@ public interface HandleWorkflowModule {
                 addressBookHandlers.nodeUpdateHandler(),
                 addressBookHandlers.nodeDeleteHandler(),
                 tokenHandlers.tokenClaimAirdropHandler(),
+                tokenHandlers.privateTokenTransferHandler(),
                 hintsHandlers.keyPublicationHandler(),
                 hintsHandlers.preprocessingVoteHandler(),
                 hintsHandlers.partialSignatureHandler(),

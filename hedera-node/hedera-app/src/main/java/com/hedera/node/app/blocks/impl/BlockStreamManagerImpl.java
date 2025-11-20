@@ -730,6 +730,10 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
 
     @Override
     public void writeItem(@NonNull final BlockItem item) {
+        if (worker == null) {
+            // Block streaming is disabled for this node, so we simply ignore stream items.
+            return;
+        }
         lastUsedTime = switch (item.item().kind()) {
             case STATE_CHANGES -> item.stateChangesOrThrow().consensusTimestampOrThrow();
             case TRANSACTION_RESULT -> item.transactionResultOrThrow().consensusTimestampOrThrow();
@@ -748,6 +752,9 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
     public @Nullable Bytes prngSeed() {
         // Incorporate all pending results before returning the seed to guarantee
         // no two consecutive transactions ever get the same seed
+        if (worker == null) {
+            return null;
+        }
         worker.sync();
         final var seed = runningHashManager.nMinus3Hash;
         return seed == null ? null : Bytes.wrap(runningHashManager.nMinus3Hash);

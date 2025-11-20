@@ -146,6 +146,11 @@ service TokenService {
     rpc updateNfts (Transaction) returns (TransactionResponse);
 
     /**
+     * Transfer private fungible token commitments without revealing amounts.
+     */
+    rpc privateTokenTransfer (Transaction) returns (TransactionResponse);
+
+    /**
      * Reject one or more tokens.
      * <p>
      * This transaction SHALL transfer the full balance of one or more tokens

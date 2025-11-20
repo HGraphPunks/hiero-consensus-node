@@ -5,6 +5,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.CUSTOM_FEE_CHARGING_EXC
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE_FOR_CUSTOM_FEE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hedera.hapi.node.base.SubType.CRYPTO_TRANSFER_WITH_HOOKS;
 import static com.hedera.hapi.node.base.SubType.DEFAULT;
 import static com.hedera.hapi.node.base.SubType.TOKEN_FUNGIBLE_COMMON;
@@ -27,6 +28,7 @@ import com.hedera.hapi.node.base.NftTransfer;
 import com.hedera.hapi.node.base.SubType;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.base.TokenTransferList;
+import com.hedera.hapi.node.base.TokenType;
 import com.hedera.hapi.node.base.TransferList;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.state.token.Nft;
@@ -214,6 +216,8 @@ public class CryptoTransferHandler extends TransferExecutor implements Transacti
                 new TransferContextImpl(context, enforceMonoServiceRestrictionsOnAutoCreationCustomFeePayments);
         final var recordBuilder = context.savepointStack().getBaseBuilder(CryptoTransferStreamBuilder.class);
 
+        ensureNoPrivateTokenTransfers(op, context.storeFactory().readableStore(ReadableTokenStore.class));
+
         executeCryptoTransfer(txn, transferContext, context, recordBuilder);
     }
 
@@ -329,6 +333,19 @@ public class CryptoTransferHandler extends TransferExecutor implements Transacti
             }
         }
         return hookInfo;
+    }
+
+    private void ensureNoPrivateTokenTransfers(
+            @NonNull final CryptoTransferTransactionBody op, @NonNull final ReadableTokenStore tokenStore) {
+        for (final var tokenTransfers : op.tokenTransfers()) {
+            if (!tokenTransfers.hasToken()) {
+                continue;
+            }
+            final var token = tokenStore.get(tokenTransfers.tokenOrThrow());
+            if (token != null && token.tokenType() == TokenType.FUNGIBLE_PRIVATE) {
+                throw new HandleException(NOT_SUPPORTED);
+            }
+        }
     }
 
     /**

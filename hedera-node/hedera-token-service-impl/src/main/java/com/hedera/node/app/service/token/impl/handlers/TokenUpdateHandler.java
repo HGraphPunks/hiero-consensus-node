@@ -28,6 +28,7 @@ import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.KeyList;
 import com.hedera.hapi.node.base.SubType;
 import com.hedera.hapi.node.base.ThresholdKey;
+import com.hedera.hapi.node.base.TokenType;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.state.token.Token;
 import com.hedera.hapi.node.state.token.TokenRelation;
@@ -190,7 +191,7 @@ public class TokenUpdateHandler extends BaseTokenHandler implements TransactionH
             validateFrozenAndKey(oldTreasuryRel);
             validateFrozenAndKey(newTreasuryRel);
 
-            if (token.tokenType().equals(FUNGIBLE_COMMON)) {
+            if (token.tokenType().equals(FUNGIBLE_COMMON) || token.tokenType().equals(TokenType.FUNGIBLE_PRIVATE)) {
                 // Transfers fungible balances and updates account's numOfPositiveBalances
                 // and puts to modifications on state.
                 transferFungibleTokensToTreasury(oldTreasuryRel, newTreasuryRel, tokenRelStore, accountStore);

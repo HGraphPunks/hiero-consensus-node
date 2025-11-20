@@ -803,6 +803,15 @@ enum TokenType {
      * IWA taxonomy _non-fungible, whole, reference, unique_
      */
     NON_FUNGIBLE_UNIQUE = 1;
+
+    /**
+     * A fungible token with private transfers.<br/>
+     * Units remain interchangeable, but ownership is tracked through
+     * cryptographic commitments so transfer amounts are hidden from public
+     * balances.<br/>
+     * IWA taxonomy _fungible, fractional, intrinsic, common_ with privacy.
+     */
+    FUNGIBLE_PRIVATE = 2;
 }
 
 /**
@@ -1793,6 +1802,11 @@ enum HederaFunctionality {
      * Claim one or more pending airdrops
      */
     TokenClaimAirdrop = 95;
+
+    /**
+     * Transfer private fungible token commitments.
+     */
+    PrivateTokenTransfer = 96;
 
     /**
      * Submit a signature of a state root hash gossiped to other nodes

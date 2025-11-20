@@ -14,6 +14,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_HAS_NO_SUPPLY_KEY
 import static com.hedera.hapi.node.base.TokenSupplyType.FINITE;
 import static com.hedera.hapi.node.base.TokenSupplyType.INFINITE;
 import static com.hedera.hapi.node.base.TokenType.FUNGIBLE_COMMON;
+import static com.hedera.hapi.node.base.TokenType.FUNGIBLE_PRIVATE;
 import static com.hedera.hapi.node.base.TokenType.NON_FUNGIBLE_UNIQUE;
 import static com.hedera.node.app.spi.workflows.HandleException.validateFalse;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
@@ -128,8 +129,9 @@ public class TokenCreateValidator {
      */
     private void validateTokenType(@NonNull final TokenType type, final long initialSupply, final int decimals)
             throws PreCheckException {
-        validateTruePreCheck(type == FUNGIBLE_COMMON || type == NON_FUNGIBLE_UNIQUE, NOT_SUPPORTED);
-        if (type == FUNGIBLE_COMMON) {
+        validateTruePreCheck(
+                type == FUNGIBLE_COMMON || type == FUNGIBLE_PRIVATE || type == NON_FUNGIBLE_UNIQUE, NOT_SUPPORTED);
+        if (type == FUNGIBLE_COMMON || type == FUNGIBLE_PRIVATE) {
             validateTruePreCheck(initialSupply >= 0, INVALID_TOKEN_INITIAL_SUPPLY);
             validateTruePreCheck(decimals >= 0, INVALID_TOKEN_DECIMALS);
         } else {

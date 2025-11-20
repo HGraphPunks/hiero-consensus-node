@@ -1,0 +1,53 @@
+/**
+ * Transaction body for private fungible token transfers.
+ */
+syntax = "proto3";
+
+package proto;
+
+// SPDX-License-Identifier: Apache-2.0
+option java_package = "com.hederahashgraph.service.proto.java";
+// <<<pbj.java_package = "com.hedera.hapi.node.token">>> This comment is special code for setting PBJ Compiler java package
+option java_multiple_files = true;
+
+import "services/basic_types.proto";
+
+/**
+ * Output commitment information for a private token transfer.
+ */
+message OutputCommitment {
+    /**
+     * Account that controls the new commitment/note.
+     */
+    AccountID owner = 1;
+
+    /**
+     * Commitment bytes (compressed EC point or hash) representing the value.
+     */
+    bytes commitment = 2;
+}
+
+/**
+ * Transfer commitments for a private fungible token while keeping values hidden.
+ */
+message PrivateTokenTransferTransactionBody {
+    /**
+     * Identifier for the token whose commitments are being spent.
+     */
+    TokenID token = 1;
+
+    /**
+     * Identifiers for existing commitments to consume (compressed EC points or hashes).
+     */
+    repeated bytes inputs = 2;
+
+    /**
+     * New commitments created by this transfer along with their owners.
+     */
+    repeated OutputCommitment outputs = 3;
+
+    /**
+     * Proof bytes verifying sum equality (and range constraints when available).
+     */
+    bytes zkProof = 4;
+}

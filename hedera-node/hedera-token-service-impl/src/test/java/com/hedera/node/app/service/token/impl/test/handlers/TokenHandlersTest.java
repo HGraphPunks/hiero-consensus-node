@@ -17,6 +17,7 @@ import com.hedera.node.app.service.token.impl.handlers.CryptoGetLiveHashHandler;
 import com.hedera.node.app.service.token.impl.handlers.CryptoGetStakersHandler;
 import com.hedera.node.app.service.token.impl.handlers.CryptoTransferHandler;
 import com.hedera.node.app.service.token.impl.handlers.CryptoUpdateHandler;
+import com.hedera.node.app.service.token.impl.handlers.PrivateTokenTransferHandler;
 import com.hedera.node.app.service.token.impl.handlers.TokenAccountWipeHandler;
 import com.hedera.node.app.service.token.impl.handlers.TokenAirdropHandler;
 import com.hedera.node.app.service.token.impl.handlers.TokenAssociateToAccountHandler;
@@ -84,6 +85,7 @@ public class TokenHandlersTest {
     private TokenCancelAirdropHandler tokenCancelAirdropHandler;
     private TokenClaimAirdropHandler tokenClaimAirdropHandler;
     private TokenAirdropHandler tokenAirdropHandler;
+    private PrivateTokenTransferHandler privateTokenTransferHandler;
     private TokenHandlers tokenHandlers;
 
     @BeforeEach
@@ -125,6 +127,7 @@ public class TokenHandlersTest {
         tokenCancelAirdropHandler = mock(TokenCancelAirdropHandler.class);
         tokenClaimAirdropHandler = mock(TokenClaimAirdropHandler.class);
         tokenAirdropHandler = mock(TokenAirdropHandler.class);
+        privateTokenTransferHandler = mock(PrivateTokenTransferHandler.class);
 
         tokenHandlers = new TokenHandlers(
                 cryptoCreateHandler,
@@ -163,7 +166,8 @@ public class TokenHandlersTest {
                 tokenUpdateNftsHandler,
                 tokenCancelAirdropHandler,
                 tokenClaimAirdropHandler,
-                tokenAirdropHandler);
+                tokenAirdropHandler,
+                privateTokenTransferHandler);
     }
 
     @Test
@@ -339,5 +343,10 @@ public class TokenHandlersTest {
     @Test
     public void tokenAirdropsHandlerReturnsCorrectInstance() {
         assertEquals(tokenAirdropHandler, tokenHandlers.tokenAirdropsHandler());
+    }
+
+    @Test
+    public void privateTokenTransferHandlerReturnsCorrectInstance() {
+        assertEquals(privateTokenTransferHandler, tokenHandlers.privateTokenTransferHandler());
     }
 }

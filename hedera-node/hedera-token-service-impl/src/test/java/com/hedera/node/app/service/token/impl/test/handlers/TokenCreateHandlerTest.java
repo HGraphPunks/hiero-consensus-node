@@ -18,6 +18,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_WIPE_KEY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ZERO_BYTE_IN_STRING;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.MISSING_TOKEN_NAME;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.MISSING_TOKEN_SYMBOL;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT;
@@ -41,6 +42,7 @@ import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mock.Strictness.LENIENT;
 import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.mockStatic;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Duration;
@@ -57,6 +59,9 @@ import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.entityid.EntityNumGenerator;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.handlers.TokenCreateHandler;
+import com.hedera.node.app.service.token.impl.privacy.PedersenCommitments;
+import com.hedera.node.app.service.token.impl.privacy.PrivateCommitmentInfo;
+import com.hedera.node.app.service.token.impl.privacy.PrivateCommitmentRegistry;
 import com.hedera.node.app.service.token.impl.test.handlers.util.CryptoTokenHandlerTestBase;
 import com.hedera.node.app.service.token.impl.validators.CustomFeesValidator;
 import com.hedera.node.app.service.token.impl.validators.TokenAttributesValidator;
@@ -75,6 +80,7 @@ import com.hedera.node.config.VersionedConfigImpl;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import java.util.List;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -125,6 +131,11 @@ class TokenCreateHandlerTest extends CryptoTokenHandlerTestBase {
         tokenCreateValidator = new TokenCreateValidator(tokenFieldsValidator);
         subject = new TokenCreateHandler(idFactory, customFeesValidator, tokenCreateValidator);
         givenStoresAndConfig(handleContext);
+    }
+
+    @AfterEach
+    void clearCommitmentRegistry() {
+        PrivateCommitmentRegistry.clear();
     }
 
     @Test
@@ -178,6 +189,52 @@ class TokenCreateHandlerTest extends CryptoTokenHandlerTestBase {
         assertThat(tokenRel.frozen()).isFalse();
         assertThat(tokenRel.nextToken()).isNull();
         assertThat(tokenRel.previousToken()).isNull();
+    }
+
+    @Test
+    void privateTokenRejectsCustomFees() {
+        setUpTxnContext();
+        txn = new TokenCreateBuilder().withTokenType(TokenType.FUNGIBLE_PRIVATE).build();
+        given(handleContext.body()).willReturn(txn);
+
+        assertThatThrownBy(() -> subject.handle(handleContext))
+                .isInstanceOf(HandleException.class)
+                .has(responseCode(NOT_SUPPORTED));
+    }
+
+    @Test
+    void privateTokenCommitsInitialSupplyWithoutCreditingTreasury() {
+        setUpTxnContext();
+        final long privateSupply = 250L;
+        txn = new TokenCreateBuilder()
+                .withTokenType(TokenType.FUNGIBLE_PRIVATE)
+                .withCustomFees(List.of())
+                .withInitialSupply(privateSupply)
+                .build();
+        given(handleContext.body()).willReturn(txn);
+        given(expiryValidator.expirationStatus(any(), anyBoolean(), anyLong())).willReturn(OK);
+        given(expiryValidator.resolveCreationAttempt(anyBoolean(), any(), any()))
+                .willReturn(new ExpiryMeta(
+                        consensusInstant.plusSeconds(autoRenewSecs).getEpochSecond(),
+                        autoRenewSecs,
+                        autoRenewAccountId));
+
+        final var commitment = PrivateCommitmentInfo.known(
+                newTokenId, treasuryId, Bytes.wrap(new byte[] {0x01}), Bytes.wrap(new byte[] {0x02}), privateSupply);
+
+        try (var pedersen = mockStatic(PedersenCommitments.class)) {
+            pedersen.when(() -> PedersenCommitments.newTreasuryNote(newTokenId, treasuryId, privateSupply))
+                    .thenReturn(commitment);
+            subject.handle(handleContext);
+        }
+
+        final var storedToken = writableTokenStore.get(newTokenId);
+        assertThat(storedToken.totalSupply()).isEqualTo(privateSupply);
+        final var treasuryRel = writableTokenRelStore.get(treasuryId, newTokenId);
+        assertThat(treasuryRel.balance()).isZero();
+
+        assertThat(PrivateCommitmentRegistry.get(newTokenId, commitment.commitment()))
+                .isEqualTo(commitment);
     }
 
     @Test

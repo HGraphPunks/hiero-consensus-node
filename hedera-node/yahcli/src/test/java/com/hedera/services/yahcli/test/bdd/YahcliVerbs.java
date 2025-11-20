@@ -6,6 +6,7 @@ import static java.util.Objects.requireNonNull;
 import com.hedera.services.yahcli.commands.ivy.scenarios.Scenarios;
 import com.hedera.services.yahcli.commands.ivy.scenarios.ScenariosConfig;
 import com.hedera.services.yahcli.config.domain.GlobalConfig;
+import com.hedera.services.yahcli.test.YahcliTestState;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.nio.file.Path;
 import java.util.HashMap;
@@ -41,11 +42,11 @@ public class YahcliVerbs {
             Pattern.compile("freeze scheduled for (\\d{4}-\\d{2}-\\d{2}\\.\\d{2}:\\d{2}:\\d{2})");
     private static final Pattern ABORT_FREEZE_PATTERN =
             Pattern.compile("freeze aborted and/or staged upgrade discarded");
-    private static final Pattern SCHEDULE_ID_PATTERN = Pattern.compile(" with schedule ID (\\d+\\.\\d+\\.\\d+)");
+    private static final Pattern SCHEDULE_ID_PATTERN = Pattern.compile("(?:with\\s+)?schedule ID (\\d+\\.\\d+\\.\\d+)");
 
-    public static final AtomicReference<String> DEFAULT_CONFIG_LOC = new AtomicReference<>();
-    public static final AtomicReference<String> DEFAULT_WORKING_DIR = new AtomicReference<>();
-    public static final String TEST_NETWORK = "hapi";
+    public static final AtomicReference<String> DEFAULT_CONFIG_LOC = YahcliTestState.DEFAULT_CONFIG_LOC;
+    public static final AtomicReference<String> DEFAULT_WORKING_DIR = YahcliTestState.DEFAULT_WORKING_DIR;
+    public static final String TEST_NETWORK = YahcliTestState.TEST_NETWORK;
 
     private YahcliVerbs() {
         throw new UnsupportedOperationException("Utility class");
@@ -452,7 +453,7 @@ public class YahcliVerbs {
             if (m.find()) {
                 cb.accept(m.group(1));
             } else {
-                Assertions.fail("Expected '" + output + "' to contain '" + SCHEDULE_FREEZE_PATTERN.pattern() + "'");
+                Assertions.fail("Expected '" + output + "' to contain '" + SCHEDULE_ID_PATTERN.pattern() + "'");
             }
         };
     }
@@ -477,8 +478,7 @@ public class YahcliVerbs {
      * @param configLoc the config location
      */
     public static void setDefaultConfigLoc(@NonNull final String configLoc) {
-        requireNonNull(configLoc);
-        DEFAULT_CONFIG_LOC.set(requireNonNull(configLoc));
+        YahcliTestState.setDefaultConfigLoc(requireNonNull(configLoc));
     }
 
     /**
@@ -486,8 +486,7 @@ public class YahcliVerbs {
      * @param workingDir the working directory
      */
     public static void setDefaultWorkingDir(@NonNull final String workingDir) {
-        requireNonNull(workingDir);
-        DEFAULT_WORKING_DIR.set(requireNonNull(workingDir));
+        YahcliTestState.setDefaultWorkingDir(requireNonNull(workingDir));
     }
 
     /**

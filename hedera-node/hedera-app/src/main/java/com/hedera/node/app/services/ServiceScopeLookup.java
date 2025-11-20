@@ -91,7 +91,8 @@ public class ServiceScopeLookup {
                     TOKEN_AIRDROP,
                     TOKEN_CLAIM_AIRDROP,
                     TOKEN_CANCEL_AIRDROP,
-                    TOKEN_REJECT -> TokenService.NAME;
+                    TOKEN_REJECT,
+                    PRIVATE_TOKEN_TRANSFER -> TokenService.NAME;
 
             case UTIL_PRNG, ATOMIC_BATCH -> UtilService.NAME;
 

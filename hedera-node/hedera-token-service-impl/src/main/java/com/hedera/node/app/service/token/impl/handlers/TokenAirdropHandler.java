@@ -3,6 +3,7 @@ package com.hedera.node.app.service.token.impl.handlers;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_TOKEN_BALANCE;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.PENDING_NFT_AIRDROP_ALREADY_EXISTS;
@@ -31,6 +32,7 @@ import com.hedera.hapi.node.base.PendingAirdropValue;
 import com.hedera.hapi.node.base.SubType;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.base.TokenTransferList;
+import com.hedera.hapi.node.base.TokenType;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.state.token.AccountPendingAirdrop;
 import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
@@ -143,6 +145,9 @@ public class TokenAirdropHandler extends TransferExecutor implements Transaction
             throwIfReceiverCannotClaimAirdrop(xfers, accountStore);
 
             final var tokenId = xfers.tokenOrThrow();
+            final var tokenMeta = tokenStore.get(tokenId);
+            validateTrue(tokenMeta != null, INVALID_TOKEN_ID);
+            validateTrue(tokenMeta.tokenType() != TokenType.FUNGIBLE_PRIVATE, NOT_SUPPORTED);
             boolean shouldExecuteCryptoTransfer = false;
             final var transferListBuilder = TokenTransferList.newBuilder()
                     .expectedDecimals(xfers.expectedDecimals())

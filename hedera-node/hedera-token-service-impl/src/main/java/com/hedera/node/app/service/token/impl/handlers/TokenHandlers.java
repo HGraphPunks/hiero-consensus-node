@@ -52,6 +52,7 @@ public class TokenHandlers {
     private final TokenRejectHandler tokenRejectHandler;
     private final TokenCancelAirdropHandler tokenCancelAirdropHandler;
     private final TokenClaimAirdropHandler tokenClaimAirdropHandler;
+    private final PrivateTokenTransferHandler privateTokenTransferHandler;
 
     /**
      * Constructor for the TokenHandlers.
@@ -130,7 +131,8 @@ public class TokenHandlers {
             @NonNull final TokenUpdateNftsHandler tokenUpdateNftsHandler,
             @NonNull final TokenCancelAirdropHandler tokenCancelAirdropHandler,
             @NonNull final TokenClaimAirdropHandler tokenClaimAirdropHandler,
-            @NonNull final TokenAirdropHandler tokenAirdropHandler) {
+            @NonNull final TokenAirdropHandler tokenAirdropHandler,
+            @NonNull final PrivateTokenTransferHandler privateTokenTransferHandler) {
         this.cryptoCreateHandler = Objects.requireNonNull(cryptoCreateHandler, "cryptoCreateHandler must not be null");
         this.cryptoUpdateHandler = Objects.requireNonNull(cryptoUpdateHandler, "cryptoUpdateHandler must not be null");
         this.cryptoTransferHandler =
@@ -192,6 +194,8 @@ public class TokenHandlers {
                 Objects.requireNonNull(tokenCancelAirdropHandler, "tokenCancelAirdropHandler must not be null");
         this.tokenClaimAirdropHandler =
                 Objects.requireNonNull(tokenClaimAirdropHandler, "tokenClaimAirdropHandler must not be null");
+        this.privateTokenTransferHandler =
+                Objects.requireNonNull(privateTokenTransferHandler, "privateTokenTransferHandler must not be null");
     }
 
     /**
@@ -513,6 +517,15 @@ public class TokenHandlers {
      */
     public TokenClaimAirdropHandler tokenClaimAirdropHandler() {
         return tokenClaimAirdropHandler;
+    }
+
+    /**
+     * Gets the privateTokenTransferHandler.
+     *
+     * @return the privateTokenTransferHandler
+     */
+    public PrivateTokenTransferHandler privateTokenTransferHandler() {
+        return privateTokenTransferHandler;
     }
 
     public TokenAirdropHandler tokenAirdropsHandler() {

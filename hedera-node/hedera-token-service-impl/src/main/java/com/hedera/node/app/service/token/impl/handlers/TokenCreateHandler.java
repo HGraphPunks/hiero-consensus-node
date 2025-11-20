@@ -5,6 +5,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_CUSTOM_FEE_COLLECTOR;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hedera.node.app.hapi.fees.usage.SingletonUsageProperties.USAGE_PROPERTIES;
 import static com.hedera.node.app.hapi.fees.usage.token.TokenOpsUsageUtils.TOKEN_OPS_USAGE_UTILS;
 import static com.hedera.node.app.hapi.fees.usage.token.entities.TokenEntitySizes.TOKEN_ENTITY_SIZES;
@@ -28,6 +29,8 @@ import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
 import com.hedera.node.app.service.token.impl.WritableTokenStore;
+import com.hedera.node.app.service.token.impl.privacy.PedersenCommitments;
+import com.hedera.node.app.service.token.impl.privacy.PrivateCommitmentRegistry;
 import com.hedera.node.app.service.token.impl.util.TokenHandlerHelper;
 import com.hedera.node.app.service.token.impl.validators.CustomFeesValidator;
 import com.hedera.node.app.service.token.impl.validators.TokenCreateValidator;
@@ -44,9 +47,12 @@ import com.hedera.node.config.data.EntitiesConfig;
 import com.hedera.node.config.data.TokensConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.HexFormat;
 import java.util.List;
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * This class contains all workflow-related functionality regarding {@link
@@ -54,6 +60,7 @@ import javax.inject.Singleton;
  */
 @Singleton
 public class TokenCreateHandler extends BaseTokenHandler implements TransactionHandler {
+    private static final Logger log = LogManager.getLogger(TokenCreateHandler.class);
     private final EntityIdFactory idFactory;
     private final CustomFeesValidator customFeesValidator;
     private final TokenCreateValidator tokenCreateValidator;
@@ -107,6 +114,9 @@ public class TokenCreateHandler extends BaseTokenHandler implements TransactionH
         requireNonNull(context);
         final var txn = context.body();
         final var op = txn.tokenCreationOrThrow();
+        if (op.tokenType() == TokenType.FUNGIBLE_PRIVATE) {
+            validateTrue(op.customFees().isEmpty(), NOT_SUPPORTED);
+        }
         // Create or get needed config and stores
         final var tokensConfig = context.configuration().getConfigData(TokensConfig.class);
         final var storeFactory = context.storeFactory();
@@ -148,7 +158,9 @@ public class TokenCreateHandler extends BaseTokenHandler implements TransactionH
         // Since we have associated treasury and needed fee collector accounts in the previous step,
         // this relation must exist
         final var treasuryRel = requireNonNull(tokenRelationStore.get(op.treasuryOrThrow(), newTokenId));
-        if (op.initialSupply() > 0) {
+        if (op.tokenType() == TokenType.FUNGIBLE_PRIVATE) {
+            commitPrivateInitialSupply(newTokenId, op, newToken, tokenStore);
+        } else if (op.initialSupply() > 0) {
             // This keeps modified token with minted balance into modifications in token store
             mintFungible(
                     newToken,
@@ -169,6 +181,29 @@ public class TokenCreateHandler extends BaseTokenHandler implements TransactionH
         // Update record with newly created token id
         recordBuilder.tokenID(newTokenId);
         recordBuilder.tokenType(newToken.tokenType());
+    }
+
+    private void commitPrivateInitialSupply(
+            @NonNull final TokenID tokenId,
+            @NonNull final TokenCreateTransactionBody op,
+            @NonNull final Token token,
+            @NonNull final WritableTokenStore tokenStore) {
+        final long initialSupply = op.initialSupply();
+        if (initialSupply <= 0) {
+            // Nothing to commit, but ensure state reflects explicit zero supply
+            tokenStore.put(token.copyBuilder().totalSupply(0).build());
+            return;
+        }
+        final var updatedToken = token.copyBuilder().totalSupply(initialSupply).build();
+        tokenStore.put(updatedToken);
+        final var commitment = PedersenCommitments.newTreasuryNote(tokenId, op.treasuryOrThrow(), initialSupply);
+        PrivateCommitmentRegistry.put(commitment);
+        log.info(
+                "Initial private supply of {} committed to treasury {} for token {} via {}",
+                initialSupply,
+                readable(op.treasuryOrThrow()),
+                readable(tokenId),
+                HexFormat.of().formatHex(commitment.commitment().toByteArray()));
     }
 
     /**
@@ -290,6 +325,14 @@ public class TokenCreateHandler extends BaseTokenHandler implements TransactionH
                     return fee; // Return unmodified fee if conditions are not met
                 })
                 .toList();
+    }
+
+    private static String readable(@NonNull final AccountID accountID) {
+        return accountID.shardNum() + "." + accountID.realmNum() + "." + accountID.accountNum();
+    }
+
+    private static String readable(@NonNull final TokenID tokenID) {
+        return tokenID.shardNum() + "." + tokenID.realmNum() + "." + tokenID.tokenNum();
     }
 
     /**
@@ -444,7 +487,7 @@ public class TokenCreateHandler extends BaseTokenHandler implements TransactionH
      */
     public static SubType tokenSubTypeFrom(final TokenType tokenType, boolean hasCustomFees) {
         return switch (tokenType) {
-            case FUNGIBLE_COMMON ->
+            case FUNGIBLE_COMMON, FUNGIBLE_PRIVATE ->
                 hasCustomFees ? SubType.TOKEN_FUNGIBLE_COMMON_WITH_CUSTOM_FEES : SubType.TOKEN_FUNGIBLE_COMMON;
             case NON_FUNGIBLE_UNIQUE ->
                 hasCustomFees ? SubType.TOKEN_NON_FUNGIBLE_UNIQUE_WITH_CUSTOM_FEES : SubType.TOKEN_NON_FUNGIBLE_UNIQUE;

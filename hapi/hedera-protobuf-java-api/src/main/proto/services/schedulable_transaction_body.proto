@@ -67,6 +67,7 @@ import "services/token_reject.proto";
 import "services/token_cancel_airdrop.proto";
 import "services/token_claim_airdrop.proto";
 import "services/token_airdrop.proto";
+import "services/token_private_transfer.proto";
 
 import "services/schedule_delete.proto";
 import "services/util_prng.proto";
@@ -403,6 +404,11 @@ message SchedulableTransactionBody {
          * other recipients receive the "airdropped" tokens immediately.
          */
         TokenAirdropTransactionBody tokenAirdrop = 48;
+
+        /**
+         * Transfer commitments for a private fungible token without revealing amounts.
+         */
+        PrivateTokenTransferTransactionBody privateTokenTransfer = 49;
     }
 
     /**

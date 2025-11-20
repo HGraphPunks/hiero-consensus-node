@@ -7,6 +7,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.BATCH_SIZE_LIMIT_EXCEED
 import static com.hedera.hapi.node.base.ResponseCodeEnum.HOOKS_EXECUTIONS_REQUIRE_TOP_LEVEL_CRYPTO_TRANSFER;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_TRANSFER_LIST_SIZE_LIMIT_EXCEEDED;
@@ -40,6 +41,7 @@ import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.SubType;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.base.TokenTransferList;
+import com.hedera.hapi.node.base.TokenType;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.base.TransferList;
 import com.hedera.hapi.node.state.token.Account;
@@ -361,6 +363,36 @@ class CryptoTransferHandlerTest extends CryptoTransferHandlerTestBase {
         Assertions.assertThatThrownBy(() -> subject.handle(handleContext))
                 .isInstanceOf(HandleException.class)
                 .has(responseCode(INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE));
+    }
+
+    @Test
+    void handleRejectsPrivateTokenTransfers() {
+        config = defaultConfig().getOrCreateConfig();
+        givenStoresAndConfig(handleContext);
+        final var privateTokenId = asToken(5150);
+        final var privateToken = fungibleToken
+                .copyBuilder()
+                .tokenId(privateTokenId)
+                .tokenType(TokenType.FUNGIBLE_PRIVATE)
+                .kycKey((Key) null)
+                .build();
+
+        final var mockedTokenStore = mock(ReadableTokenStore.class);
+        given(storeFactory.readableStore(ReadableTokenStore.class)).willReturn(mockedTokenStore);
+        given(mockedTokenStore.get(privateTokenId)).willReturn(privateToken);
+
+        final var txn = newCryptoTransfer(TokenTransferList.newBuilder()
+                .token(privateTokenId)
+                .transfers(ACCT_3333_MINUS_10, ACCT_4444_PLUS_10)
+                .build());
+
+        given(handleContext.body()).willReturn(txn);
+        given(handleContext.configuration()).willReturn(config);
+        given(handleContext.dispatchMetadata()).willReturn(DispatchMetadata.EMPTY_METADATA);
+
+        Assertions.assertThatThrownBy(() -> subject.handle(handleContext))
+                .isInstanceOf(HandleException.class)
+                .has(responseCode(NOT_SUPPORTED));
     }
 
     @Test

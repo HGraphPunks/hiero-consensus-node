@@ -91,6 +91,7 @@ public final class HandlerUtility {
                 case NODE_CREATE -> ordinary.nodeCreate(scheduledBody.nodeCreateOrThrow());
                 case NODE_UPDATE -> ordinary.nodeUpdate(scheduledBody.nodeUpdateOrThrow());
                 case NODE_DELETE -> ordinary.nodeDelete(scheduledBody.nodeDeleteOrThrow());
+                case PRIVATE_TOKEN_TRANSFER -> throw new HandleException(ResponseCodeEnum.NOT_SUPPORTED);
                 case UNSET -> throw new HandleException(ResponseCodeEnum.INVALID_TRANSACTION);
             }
         }
@@ -151,6 +152,7 @@ public final class HandlerUtility {
             case TOKEN_CANCEL_AIRDROP -> HederaFunctionality.TOKEN_CANCEL_AIRDROP;
             case TOKEN_CLAIM_AIRDROP -> HederaFunctionality.TOKEN_CLAIM_AIRDROP;
             case TOKEN_AIRDROP -> HederaFunctionality.TOKEN_AIRDROP;
+            case PRIVATE_TOKEN_TRANSFER -> HederaFunctionality.PRIVATE_TOKEN_TRANSFER;
             case UNSET -> HederaFunctionality.NONE;
         };
     }

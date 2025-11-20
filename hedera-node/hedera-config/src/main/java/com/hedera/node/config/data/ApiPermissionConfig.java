@@ -48,6 +48,7 @@ import static com.hedera.hapi.node.base.HederaFunctionality.NODE_CREATE;
 import static com.hedera.hapi.node.base.HederaFunctionality.NODE_DELETE;
 import static com.hedera.hapi.node.base.HederaFunctionality.NODE_STAKE_UPDATE;
 import static com.hedera.hapi.node.base.HederaFunctionality.NODE_UPDATE;
+import static com.hedera.hapi.node.base.HederaFunctionality.PRIVATE_TOKEN_TRANSFER;
 import static com.hedera.hapi.node.base.HederaFunctionality.SCHEDULE_CREATE;
 import static com.hedera.hapi.node.base.HederaFunctionality.SCHEDULE_DELETE;
 import static com.hedera.hapi.node.base.HederaFunctionality.SCHEDULE_GET_INFO;
@@ -190,6 +191,7 @@ import java.util.function.Function;
  * @param tokenAirdrop               the permission for {@link HederaFunctionality#TOKEN_AIRDROP} functionality
  * @param tokenCancelAirdrop         the permission for {@link HederaFunctionality#TOKEN_CANCEL_AIRDROP} functionality
  * @param tokenClaimAirdrop          the permission for {@link HederaFunctionality#TOKEN_CLAIM_AIRDROP} functionality
+ * @param privateTokenTransfer       the permission for {@link HederaFunctionality#PRIVATE_TOKEN_TRANSFER} functionality
  *
  * @param createNode                   the permission for {@link HederaFunctionality#NODE_CREATE} functionality
  * @param updateNode                   the permission for {@link HederaFunctionality#NODE_UPDATE} functionality
@@ -265,6 +267,7 @@ public record ApiPermissionConfig(
         @ConfigProperty(defaultValue = "0-*") PermissionedAccountsRange tokenAirdrop,
         @ConfigProperty(defaultValue = "0-*") PermissionedAccountsRange tokenCancelAirdrop,
         @ConfigProperty(defaultValue = "0-*") PermissionedAccountsRange tokenClaimAirdrop,
+        @ConfigProperty(defaultValue = "0-*") PermissionedAccountsRange privateTokenTransfer,
         @ConfigProperty(defaultValue = "2-55") PermissionedAccountsRange createNode,
         @ConfigProperty(defaultValue = "0-*") PermissionedAccountsRange updateNode,
         @ConfigProperty(defaultValue = "0-*") PermissionedAccountsRange deleteNode,
@@ -335,6 +338,7 @@ public record ApiPermissionConfig(
         permissionKeys.put(TOKEN_AIRDROP, c -> c.tokenAirdrop);
         permissionKeys.put(TOKEN_CANCEL_AIRDROP, c -> c.tokenCancelAirdrop);
         permissionKeys.put(TOKEN_CLAIM_AIRDROP, c -> c.tokenClaimAirdrop);
+        permissionKeys.put(PRIVATE_TOKEN_TRANSFER, c -> c.privateTokenTransfer);
         /* Queries */
         permissionKeys.put(CONSENSUS_GET_TOPIC_INFO, c -> c.getTopicInfo);
         permissionKeys.put(CONTRACT_CALL_LOCAL, c -> c.contractCallLocalMethod);

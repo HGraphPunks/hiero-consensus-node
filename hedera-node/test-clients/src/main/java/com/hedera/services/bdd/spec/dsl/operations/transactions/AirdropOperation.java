@@ -86,7 +86,7 @@ public class AirdropOperation extends AbstractSpecTransaction<AirdropOperation, 
         public TokenMovement asMovementFrom(@NonNull final SpecAccount sender) {
             final var builder =
                     switch (type()) {
-                        case FUNGIBLE_COMMON ->
+                        case FUNGIBLE_COMMON, FUNGIBLE_PRIVATE ->
                             TokenMovement.moving(asset, fungibleTokenOrThrow().name());
                         case NON_FUNGIBLE_UNIQUE ->
                             TokenMovement.movingUnique(nonFungibleTokenOrThrow().name(), asset);

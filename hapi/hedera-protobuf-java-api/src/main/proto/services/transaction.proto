@@ -74,6 +74,7 @@ import "services/token_reject.proto";
 import "services/token_airdrop.proto";
 import "services/token_cancel_airdrop.proto";
 import "services/token_claim_airdrop.proto";
+import "services/token_private_transfer.proto";
 
 import "services/schedule_create.proto";
 import "services/schedule_delete.proto";
@@ -661,6 +662,11 @@ message TransactionBody {
          * An internal-only transaction body for dispatching a hook CRUD operation.
          */
         com.hedera.hapi.node.hooks.HookDispatchTransactionBody hook_dispatch = 76;
+
+        /**
+         * Transfer commitments for a private fungible token without revealing amounts.
+         */
+        PrivateTokenTransferTransactionBody privateTokenTransfer = 77;
     }
 
     /**

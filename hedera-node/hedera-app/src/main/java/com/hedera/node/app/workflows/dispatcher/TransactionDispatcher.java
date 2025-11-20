@@ -243,6 +243,7 @@ public class TransactionDispatcher {
             case TOKEN_CLAIM_AIRDROP -> handlers.tokenClaimAirdropHandler();
             case TOKEN_AIRDROP -> handlers.tokenAirdropHandler();
             case TOKEN_CANCEL_AIRDROP -> handlers.tokenCancelAirdropHandler();
+            case PRIVATE_TOKEN_TRANSFER -> handlers.privateTokenTransferHandler();
 
             case UTIL_PRNG -> handlers.utilPrngHandler();
             case ATOMIC_BATCH -> handlers.atomicBatchHandler();
